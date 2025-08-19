@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Artistic Radio Player</title>
+    
+    <!-- Speed hints for image source -->
+    <link rel="preconnect" href="https://picsum.photos">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Manrope:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Manrope', sans-serif;
+            overscroll-behavior-y: contain;
+            background-color: #f3f4f6;
+            /* Prevent text selection globally */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+        }
+        .font-serif-artistic {
+            font-family: 'Playfair Display', serif;
+        }
+        /* Style for the album art image transition */
+        #album-art {
+            transition: opacity 0.8s ease-in-out;
+        }
+        #album-art.fading {
+            opacity: 0;
+        }
+        /* --- ANTI-COPY PROTECTION STYLES --- */
+        .image-protection-overlay {
+            /* Prevent blue highlight on tap on mobile */
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="overflow-hidden">
+
+    <!-- Main App Background and Centering Container -->
+    <div class="flex items-center justify-center w-screen h-screen bg-gradient-to-br from-gray-50 to-gray-200">
+
+        <!-- Player Card -->
+        <div class="relative w-full max-w-sm h-full sm:h-auto sm:max-h-[800px] bg-white/60 backdrop-blur-3xl border border-white/50 sm:rounded-[32px] shadow-2xl shadow-gray-300/50 flex flex-col overflow-hidden text-gray-800">
+            
+            <header class="flex items-center justify-end p-6 flex-shrink-0 z-10">
+                <button id="open-panel-btn" class="w-12 h-12 flex items-center justify-center rounded-full bg-white/50 transition-all duration-300 ease-in-out hover:bg-white active:scale-90" aria-label="Open Stations Panel">
+                    <i class="fa-solid fa-list text-gray-500 text-xl"></i>
+                </button>
+            </header>
+
+            <main class="flex flex-col items-center justify-center flex-grow text-center px-8 pt-4 pb-12">
+                <!-- Album Art Container -->
+                <div class="relative w-64 h-64 rounded-2xl shadow-xl overflow-hidden mb-8">
+                    <img id="album-art" alt="Radio Art" class="w-full h-full object-cover" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=2070&auto=format&fit=crop">
+                    <!-- ANTI-COPY PROTECTION OVERLAY -->
+                    <div id="image-protection-overlay" class="image-protection-overlay absolute inset-0 z-10 cursor-default"></div>
+                </div>
+
+                <!-- Station Info -->
+                <div class="mb-8">
+                    <h1 id="station-name" class="text-4xl font-serif-artistic text-gray-900 leading-tight">Artistic Radio</h1>
+                    <p id="playback-status" class="mt-2 text-sm font-bold tracking-widest text-gray-500 uppercase">Select A Station</p>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex items-center justify-center space-x-6">
+                    <button id="prev-btn" class="text-gray-500 hover:text-gray-800 transition-colors duration-300" aria-label="Previous Station">
+                        <i class="fa-solid fa-backward-step fa-2x"></i>
+                    </button>
+                    
+                    <button id="play-pause-btn" class="group relative w-24 h-24 flex items-center justify-center bg-gray-800/80 backdrop-blur-lg text-white rounded-full shadow-2xl shadow-gray-400/60 hover:shadow-gray-500/60 transition-all duration-300 transform hover:scale-110 active:scale-100 focus:outline-none" aria-label="Play or Pause">
+                        <!-- Font Awesome icon will be injected here -->
+                    </button>
+
+                    <button id="next-btn" class="text-gray-500 hover:text-gray-800 transition-colors duration-300" aria-label="Next Station">
+                        <i class="fa-solid fa-forward-step fa-2x"></i>
+                    </button>
+                </div>
+            </main>
+        </div>
+
+        <!-- Stations Panel -->
+        <div id="stations-panel" class="absolute inset-0 z-20 invisible opacity-0 transition-opacity duration-500 ease-in-out bg-black/20">
+            <div id="panel-content" class="absolute bottom-0 w-full h-[70%] bg-white rounded-t-[32px] shadow-2xl flex flex-col transition-transform duration-500 ease-in-out translate-y-full border-t border-gray-200">
+                <header class="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+                    <h3 class="text-xl font-bold text-gray-800">Available Stations</h3>
+                    <button id="close-panel-btn" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 transition-all duration-300 ease-in-out hover:bg-gray-200 active:scale-90" aria-label="Close Stations Panel">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+                    </button>
+                </header>
+                <div id="playlist" class="flex-grow overflow-y-auto">
+                    <!-- Stations will be generated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="audio-player" preload="none" crossOrigin="anonymous"></audio>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // === STATION LIST ===
+            const stations = [
+                { name: "KEXP 90.3 FM", sources: ["https://kexp.streamguys1.com/kexp160.aac"] },
+                { name: "Radio Paradise", sources: ["https://stream.radioparadise.com/aac-320"] },
+                { name: "SomaFM Groove Salad", sources: ["https://ice1.somafm.com/groovesalad-128-mp3"] },
+                { name: "KIIS 102.7 FM", sources: ["https://stream.revma.ihrhls.com/zc185"] },
+                { name: "Kings Malayalam FM", sources: ["https://stream.zeno.fm/l47xgvrcntyvv"] },
+                { name: "Kings Malayalam Rock", sources: ["https://stream.zeno.fm/74atefvsrgsvv"] },
+                { name: "Malayalam Devotional", sources: ["https://stream.zeno.fm/1xqc4hfwd48uv"] },
+                { name: "Kuzhippalathil Radio", sources: ["https://stream.zeno.fm/qr8ppfs22rhvv"] },
+            ];
+            // === END STATION LIST ===
+
+            const iconPlay = `<i class="fa-solid fa-play fa-2x ml-1 text-white"></i>`;
+            const iconPause = `<i class="fa-solid fa-pause fa-2x text-white"></i>`;
+
+            const el = {
+                audio: document.getElementById('audio-player'),
+                playPauseBtn: document.getElementById('play-pause-btn'),
+                prevBtn: document.getElementById('prev-btn'),
+                nextBtn: document.getElementById('next-btn'),
+                playlistContainer: document.getElementById('playlist'),
+                stationName: document.getElementById('station-name'),
+                playbackStatus: document.getElementById('playback-status'),
+                openPanelBtn: document.getElementById('open-panel-btn'),
+                closePanelBtn: document.getElementById('close-panel-btn'),
+                stationsPanel: document.getElementById('stations-panel'),
+                panelContent: document.getElementById('panel-content'),
+                albumArt: document.getElementById('album-art'),
+                imageProtectionOverlay: document.getElementById('image-protection-overlay'),
+            };
+
+            let currentIndex = -1;
+            let isSwitching = false;
+
+            // === RESILIENT IMAGE SLIDER WITH CHUNKING ===
+            const SLIDE_DURATION = 20000; // 20 seconds
+            const FADE_DURATION = 800;    // 0.8 seconds
+            const CHUNK_SIZE = 25;        // Fetch a bit more to account for skipping
+            const FETCH_THRESHOLD = 5;    // Fetch more when this many images are left
+
+            let imageList = [];
+            let currentImageIndex = 0;
+            let picsumPage = 1;
+            let isLoadingImages = false;
+            let imageInterval;
+
+            async function fetchImageChunk(page, limit) {
+                try {
+                    const url = `https://picsum.photos/v2/list?page=${page}&limit=${limit}`;
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`Picsum API failed: ${response.status}`);
+                    const data = await response.json();
+                    const imageResolution = 600;
+                    return data.map(p => `https://picsum.photos/id/${p.id}/${imageResolution}/${imageResolution}`);
+                } catch (err) {
+                    console.warn("Picsum fetch failed:", err.message);
+                    return [];
+                }
+            }
+
+            async function loadMoreImages() {
+                if (isLoadingImages) return;
+                isLoadingImages = true;
+                let newImages = await fetchImageChunk(picsumPage, CHUNK_SIZE);
+
+                // If this is the very first fetch (page 1), skip the first 10 images.
+                if (picsumPage === 1 && newImages.length > 10) {
+                    newImages = newImages.slice(10);
+                }
+
+                if (newImages.length > 0) {
+                    imageList.push(...newImages);
+                    picsumPage++;
+                }
+                isLoadingImages = false;
+            }
+
+            function switchImage(newImageUrl) {
+                el.albumArt.classList.add('fading');
+                setTimeout(() => {
+                    el.albumArt.src = newImageUrl;
+                }, FADE_DURATION);
+            }
+
+            function cycleAndPreloadNextImage() {
+                if (imageList.length < 2) return;
+
+                const imagesLeft = imageList.length - currentImageIndex;
+                if (imagesLeft <= FETCH_THRESHOLD) {
+                    loadMoreImages();
+                }
+
+                currentImageIndex = (currentImageIndex + 1) % imageList.length;
+                const nextImageUrl = imageList[currentImageIndex];
+                
+                const preloader = new Image();
+                preloader.src = nextImageUrl;
+                preloader.onload = () => switchImage(nextImageUrl);
+                preloader.onerror = () => {
+                    console.warn(`Skipping broken image, removing from list: ${nextImageUrl}`);
+                    const badIndex = imageList.indexOf(nextImageUrl);
+                    if (badIndex > -1) {
+                        imageList.splice(badIndex, 1);
+                        if (badIndex < currentImageIndex) {
+                            currentImageIndex--;
+                        }
+                    }
+                };
+            }
+
+            el.albumArt.addEventListener('load', () => {
+                el.albumArt.classList.remove('fading');
+            });
+
+            function startImageSlider() {
+                if (imageInterval) clearInterval(imageInterval);
+                if (imageList.length > 1) {
+                    imageInterval = setInterval(cycleAndPreloadNextImage, SLIDE_DURATION);
+                }
+            }
+            // === END IMAGE SLIDER LOGIC ===
+
+            function generatePlaylist() {
+                stations.forEach((station, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'station-item p-5 text-gray-600 cursor-pointer transition-colors duration-300 hover:bg-gray-100 border-b border-gray-100';
+                    item.dataset.index = index;
+                    item.innerHTML = `<span class="text-lg font-medium">${station.name}</span>`;
+                    item.addEventListener('click', () => {
+                        selectStation(index);
+                        closePanel();
+                    });
+                    el.playlistContainer.appendChild(item);
+                });
+            }
+
+            function updateActiveStationUI() {
+                document.querySelectorAll('.station-item').forEach((item, index) => {
+                    const isActive = index === currentIndex;
+                    item.classList.toggle('text-gray-900', isActive);
+                    item.classList.toggle('font-bold', isActive);
+                    item.classList.toggle('bg-gray-100', isActive);
+                });
+            }
+
+            function updateStatus(text) {
+                el.playbackStatus.textContent = text;
+            }
+
+            function trySourceOnce(url, timeoutMs = 15000) {
+                return new Promise((resolve, reject) => {
+                    el.audio.pause();
+                    el.audio.removeAttribute('src');
+                    el.audio.load();
+                    const finalUrl = url + (url.includes('?') ? '&' : '?') + '_=' + Date.now();
+                    let settled = false;
+                    const tidy = () => {
+                        el.audio.removeEventListener('playing', onPlaying);
+                        el.audio.removeEventListener('error', onError);
+                        clearTimeout(timer);
+                    };
+                    const onPlaying = () => { if (!settled) { settled = true; tidy(); resolve(finalUrl); } };
+                    const onError = () => { if (!settled) { settled = true; tidy(); reject(new Error('Audio Error')); } };
+                    el.audio.addEventListener('playing', onPlaying);
+                    el.audio.addEventListener('error', onError);
+                    el.audio.src = finalUrl;
+                    const playPromise = el.audio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(err => {
+                            if (!settled && err.name === "NotAllowedError") {
+                                settled = true;
+                                tidy();
+                                reject(new Error('Autoplay Blocked'));
+                            }
+                        });
+                    }
+                    const timer = setTimeout(() => { if (!settled) { settled = true; tidy(); reject(new Error('Timeout')); } }, timeoutMs);
+                });
+            }
+
+            async function selectStation(index) {
+                if (index === currentIndex && !el.audio.paused) return;
+                isSwitching = true;
+                currentIndex = index;
+                const station = stations[index];
+                updateActiveStationUI();
+                updateStatus('Connecting...');
+                el.stationName.textContent = station.name;
+                el.playPauseBtn.innerHTML = iconPause;
+                let connected = false;
+                for (const source of station.sources) {
+                    try {
+                        await trySourceOnce(source);
+                        connected = true;
+                        break;
+                    } catch (err) {
+                        console.error(`Source failed for ${station.name}: ${err.message}`);
+                    }
+                }
+                if (!connected) {
+                    updateStatus('Station Unavailable');
+                    el.playPauseBtn.innerHTML = iconPlay;
+                    el.audio.removeAttribute('src');
+                }
+                isSwitching = false;
+            }
+
+            async function handlePlayPauseClick() {
+                if (currentIndex === -1) {
+                    selectStation(0);
+                    return;
+                }
+                if (el.audio.paused) {
+                    if (el.audio.src) {
+                        try { await el.audio.play(); } catch (e) { updateStatus('Play Blocked'); }
+                    } else {
+                        await selectStation(currentIndex);
+                    }
+                } else {
+                    el.audio.pause();
+                }
+            }
+
+            function handleNextClick() {
+                const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % stations.length;
+                selectStation(nextIndex);
+            }
+
+            function handlePrevClick() {
+                const prevIndex = currentIndex <= 0 ? stations.length - 1 : currentIndex - 1;
+                selectStation(prevIndex);
+            }
+
+            function openPanel() {
+                el.stationsPanel.classList.remove('invisible', 'opacity-0');
+                el.panelContent.classList.remove('translate-y-full');
+            }
+
+
+
+            function closePanel() {
+                el.panelContent.classList.add('translate-y-full');
+                el.stationsPanel.classList.add('opacity-0');
+                setTimeout(() => el.stationsPanel.classList.add('invisible'), 500);
+            }
+
+            // === ANTI-COPY PROTECTION EVENT LISTENERS ===
+            function setupProtection() {
+                el.imageProtectionOverlay.addEventListener('contextmenu', e => e.preventDefault());
+                el.imageProtectionOverlay.addEventListener('dragstart', e => e.preventDefault());
+                window.addEventListener('keydown', e => {
+                    if (e.ctrlKey && (e.key === 's' || e.key === 'p')) {
+                        e.preventDefault();
+                    }
+                });
+            }
+
+            // === DEVTOOLS DETERRENT ===
+            function setupDevToolsDeterrent() {
+                const devtoolsCheck = () => {
+                    console.log('%cHold Up!', 'color: #ff5722; font-size: 32px; font-weight: bold;');
+                    console.log('%cThis interface is for listening, not inspecting. Please close the developer tools.', 'font-size: 16px;');
+                };
+                let devtoolsOpen = false;
+                setInterval(() => {
+                    const widthThreshold = window.outerWidth - window.innerWidth > 160;
+                    const heightThreshold = window.outerHeight - window.innerHeight > 160;
+                    if (widthThreshold || heightThreshold) {
+                        if (!devtoolsOpen) {
+                            devtoolsCheck();
+                            devtoolsOpen = true;
+                        }
+                    } else {
+                        devtoolsOpen = false;
+                    }
+                }, 1000);
+            }
+
+            // Initialization
+            async function init() {
+                el.playPauseBtn.innerHTML = iconPlay;
+                generatePlaylist();
+                
+                el.playPauseBtn.addEventListener('click', handlePlayPauseClick);
+                el.nextBtn.addEventListener('click', handleNextClick);
+                el.prevBtn.addEventListener('click', handlePrevClick);
+                el.openPanelBtn.addEventListener('click', openPanel);
+                el.closePanelBtn.addEventListener('click', closePanel);
+                el.stationsPanel.addEventListener('click', (e) => { if (e.target === el.stationsPanel) closePanel(); });
+                el.audio.addEventListener('playing', () => { el.playPauseBtn.innerHTML = iconPause; updateStatus('Playing'); });
+                el.audio.addEventListener('pause', () => { el.playPauseBtn.innerHTML = iconPlay; if (!isSwitching) updateStatus('Paused'); });
+                el.audio.addEventListener('waiting', () => { if (!isSwitching) updateStatus('Buffering...'); });
+                
+                setupProtection();
+                setupDevToolsDeterrent();
+
+                await loadMoreImages();
+                
+                if (imageList.length > 0) {
+                    el.albumArt.src = imageList[0];
+                    startImageSlider();
+                }
+            }
+            init();
+        });
+    </script>
+
+</body>
+</html>
